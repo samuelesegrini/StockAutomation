@@ -294,7 +294,6 @@ function processStocksWithStats(sheets, config, logger) {
       try {
         // Skip unsupported exchanges
         if (!isStockSupported(stock.exchange, config)) {
-          logger.log(`Skipping unsupported exchange: ${stock.exchange}`);
           return;
         }
 
@@ -341,27 +340,40 @@ function processStocksWithStats(sheets, config, logger) {
  * in an efficient way by updating multiple stocks at once.
  */
 function updateStockPrices(entries, targetSheet, config) {
+  if (!entries.length) return;
+  
   const lastRow = targetSheet.getLastRow() + 1;
   const cols = config.sheets.targetColumns;
   
-  // Prepare Google Finance formulas
-  const formulas = entries.map(entry => 
-    [`=GOOGLEFINANCE("${entry.symbol}")`]
-  );
-  
-  // Prepare other data
-  const data = entries.map(entry => [
-    entry.exchange,
-    entry.ticker,
-    entry.dateTime
-  ]);
+  try {
+    const formulas = entries.map(entry => 
+      [`=GOOGLEFINANCE("${entry.exchange}:${entry.ticker}")`]
+    );
+    
+    targetSheet.getRange(lastRow, cols.price, entries.length, 1)
+      .setFormulas(formulas);
+    
+    SpreadsheetApp.flush();
+    
+    const prices = targetSheet.getRange(lastRow, cols.price, entries.length, 1)
+      .getValues();
+    
 
-  // Write everything to the sheet
-  targetSheet.getRange(lastRow, cols.price, entries.length, 1)
-    .setFormulas(formulas);
-  
-  targetSheet.getRange(lastRow, cols.exchange, entries.length, 3)
-    .setValues(data);
+    const batchData = entries.map((entry, index) => [
+      entry.exchange,
+      entry.ticker,
+      entry.dateTime,
+      prices[index][0]  // Use fetched price
+    ]);
+    
+
+    targetSheet.getRange(lastRow, cols.exchange, entries.length, 4)
+      .setValues(batchData);
+    
+  } catch (error) {
+    console.error('Error updating stock prices:', error);
+    throw new Error(`Failed to update stock prices: ${error.message}`);
+  }
 }
 
 /**
@@ -382,13 +394,31 @@ function getStockData(sourceSheet, config, logger) {
       Math.abs(config.sheets.sourceColumns.exchange - config.sheets.sourceColumns.ticker) + 1
     ).getValues();
 
-    // Convert to easy-to-use format
-    return data.map(row => ({
-      exchange: row[config.sheets.sourceColumns.exchange - 
-        Math.min(config.sheets.sourceColumns.exchange, config.sheets.sourceColumns.ticker)],
-      ticker: row[config.sheets.sourceColumns.ticker - 
-        Math.min(config.sheets.sourceColumns.exchange, config.sheets.sourceColumns.ticker)]
-    }));
+    // Create a Map to store unique combinations of exchange and ticker
+    const uniqueStocks = new Map();
+
+    // Process each row, keeping only unique combinations
+    data.forEach(row => {
+      const exchange = row[config.sheets.sourceColumns.exchange - 
+        Math.min(config.sheets.sourceColumns.exchange, config.sheets.sourceColumns.ticker)];
+      const ticker = row[config.sheets.sourceColumns.ticker - 
+        Math.min(config.sheets.sourceColumns.exchange, config.sheets.sourceColumns.ticker)];
+      
+      // Create a unique key for each stock
+      const stockKey = `${exchange}:${ticker}`;
+      
+      // Only add if we haven't seen this stock before
+      if (!uniqueStocks.has(stockKey)) {
+        uniqueStocks.set(stockKey, {
+          exchange: exchange,
+          ticker: ticker
+        });
+      }
+    });
+
+    // Convert Map back to array of objects
+    return Array.from(uniqueStocks.values());
+    
   } catch (error) {
     logger.error('Could not read stock list:', error);
     return [];
