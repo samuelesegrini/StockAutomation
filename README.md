@@ -56,7 +56,7 @@ Will be populated automatically with:
 - Column E: Date and time
 - Column F: Actual price value
 
-IMPORTANT: If you want to change the colums or sheets please modify the CONFIG section
+IMPORTANT: If you want to change the colums or sheets please modify the `CONFIG` section
 
 ## Initial Setup
 1. Open Script Editor
@@ -75,7 +75,7 @@ IMPORTANT: If you want to change the colums or sheets please modify the CONFIG s
 - 19:00 - Mid-Day
 - 22:00 - Market Close
 
-IMPORTANT: If you want to edit times(you can setup whenever) please look at Google Documentation and edit the triggers.gs file
+IMPORTANT: If you want to edit times (you can setup whenever) please look at Google Documentation and edit the `triggers.gs` file
 
 ## Troubleshooting
 ### Common Issues
@@ -90,11 +90,6 @@ IMPORTANT: If you want to edit times(you can setup whenever) please look at Goog
    - Check symbol format
    - Verify exchange names
    - Remove extra spaces
-
-### Getting Help
-1. Check the Logs sheet for error messages
-2. Review the troubleshooting section in the code comments
-3. Contact the maintainer: [samuele.segrini@example.com]
 
 ## Contributing
 1. Fork the repository
