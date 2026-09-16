@@ -1,7 +1,7 @@
 # Automatic Stock Market Data Updater
 ## Version 1.0.0
 
-Copyright (c) 2024 Samuele Segrini  
+Copyright (c) 2026 Samuele Segrini  
 Licensed under MIT License
 
 ## Overview
